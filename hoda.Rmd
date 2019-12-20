@@ -1,0 +1,95 @@
+---
+title: "Trends in Global Atmospheric Carbon Dioxide"
+author: "Hoda"
+date: "11/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Understanding
+
+This data on monthly global atmospheric carbon dioxide CO2, provided by the Earth System research Laboratory is integral to understanding of the global CO2 dynamics. It gives monthly average of CO2 concentration in parts per million (ppm). The concentration in ppm express dry air mole fraction defined as the number of molecules of carbondioxide divided by the number of all molecules in air, including CO2 itself, after water vapor has been removed.
+
+On the website, we can see a graph of CO2 in ppm as monthly average and its trend (seasonal correction) for the last 5 years of record (2015 to 2019). The trend is calculated by a moving average of seven (an odd number) adjacent seasonal cycles centered on the month to be corrected. The trend changes from 397 to 412 ppm in 5 years, which is an average increase of ~3 ppm/year.
+
+
+## Loading the required libraries
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+
+```
+
+## Data Download 
+
+We now downlad the global averaged marine surface monthly mean data from the NOAA website [here](https://www.esrl.noaa.gov/gmd/ccgg/trends/gl_data.html)
+```{r}
+file_path <- "./data/co2_mm_gl.txt"
+if (!file.exists(file_path)) {
+dir.create("./data")
+url <- "ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_gl.txt"
+download.file(url = url,
+destfile = file_path)
+}
+```
+
+## Reading in the file
+
+We use the read.table function to read in the txt file and skip the first 58 lines of metadata (lines starting with the comment sign). Since we are interested in only the monthly average and trend columns, we select only the two columns and give them the appropriate names
+```{r}
+co2_monthly <- read.table("data/co2_mm_gl.txt",skip=58)[,4:5]
+names(co2_monthly) <- c("Monthly Avg","Trend")
+head(co2_monthly)
+```
+
+## Time Series
+
+We now convert to a time series starting month 1 of 1980 with a monthly frequency
+
+```{r}
+co2_mo_ts <- ts(co2_monthly, start=c(1980,1),frequency=12)
+head(co2_mo_ts, 10)
+```
+
+We now use the str() to confirm the object we have to be sure it is a time series.
+```{r}
+str(co2_mo_ts)
+```
+
+## Plotting
+
+Now we can obtain a plot of our time series object using the function ts.plot()
+```{r}
+ts.plot(co2_mo_ts,
+        type="l",
+        lty=2:1,
+        lwd=1:2,
+        xlab="Year",
+        ylab="CO2 (ppm)")
+legend('topleft',leg=names(co2_monthly),lty=2:1,lwd=c(1,2))
+```
+
+## Time series plot for the last five years
+
+In order to obtain a time series plot for a fraction of time from our original data set, we use the window function in base R
+```{r}
+recent_5_yrs <- window(co2_mo_ts,
+                       start=c(2015,5),
+                       end=c(2019,5))
+
+ts.plot(recent_5_yrs,
+        type="l",
+        lty=2:1,
+        lwd=1:2,
+        xlab="Year",
+        ylab="CO2 (ppm)")
+
+legend('topleft',
+       leg=names(co2_monthly),
+       lty=2:1,
+       lwd=c(1,2))
+```
+
